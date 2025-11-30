@@ -1,6 +1,7 @@
 package com.pingyu.pingaiagent.app;
 
 import com.pingyu.pingaiagent.advisor.MyLoggerAdvisor;
+import com.pingyu.pingaiagent.advisor.ReReadingAdvisor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -43,7 +44,8 @@ public class LoveApp {
                 // 核心: 挂载记忆拦截器
                 .defaultAdvisors(
                     new MessageChatMemoryAdvisor(chatMemory), // 记忆
-                    new MyLoggerAdvisor() // <--- 【关键】在此处安装窃听器！
+                    new ReReadingAdvisor(), // <--- 1. 先执行重读 (篡改请求)
+                    new MyLoggerAdvisor()   // <--- 2. 再执行日志 (记录篡改后的结果)
                 )
                 .build();
     }
