@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: ping-ai-agent
+
+  # ==========================================
+  #  Spring AI Alibaba 标准配置 (保留这一个就好)
+  # ==========================================
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: qwen-plus
+#    ollama:
+#      base-url: http://localhost:11434
+#      chat:
+#        model: llama3
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+
+# springdoc-openapi
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.pingyu.pingaiagent.controller
+
+# knife
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+aliyun:
+  dashscope:
+    # 这里使用 ${} 语法直接读取系统环境变量
+    # 只要系统里有 DASHSCOPE_API_KEY，Spring 启动时就会自动填进去
+    api-key: ${DASHSCOPE_API_KEY}
