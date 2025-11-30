@@ -47,4 +47,22 @@ class LoveAppTest {
         System.out.println(">>> 记忆验证结果: " + (hasMemory ? "通过 (Green)" : "失败 (Red)"));
         Assertions.assertTrue(hasMemory, "AI 竟然忘记了侦探的名字！(Memory Fail)");
     }
+
+    @Test
+    void testChatWithReport() {
+        String chatId = "test-report-001";
+        String message = "我暗恋隔壁班的女生，经常偷看她但不敢说话，我该怎么办？";
+
+        // 调用结构化接口
+        LoveApp.LoveReport report = loveApp.doChatWithReport(message, chatId);
+
+        // 验证结果
+        System.out.println(">>> 报告标题: " + report.title());
+        System.out.println(">>> 建议列表: " + report.suggestions());
+
+        Assertions.assertNotNull(report);
+        Assertions.assertNotNull(report.title());
+        Assertions.assertTrue(report.suggestions().size() > 0);
+    }
+
 }

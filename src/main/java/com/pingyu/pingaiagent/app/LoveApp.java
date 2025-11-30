@@ -9,7 +9,10 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
@@ -19,6 +22,7 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
  * 核心策略:
  * 1. 使用 InMemoryChatMemory (SOP 2 决策: 快速验证)
  * 2. 记忆窗口限制为 3 (SOP 2 决策: 平衡效率)
+ * 3. 集成结构化输出 (SOP 3: 案件 AI-008)
  */
 @Component
 @Slf4j
@@ -33,6 +37,14 @@ public class LoveApp {
             "引导用户详述事情经过、对方反应及自身想法,以便给出专属解决方案。";
 
     /**
+     * [新增] 定义结构化数据载体 (Java 14 Record 特性)
+     * 这是一个不可变的数据类，专门用来接收 AI 的结构化输出。
+     * @param title 报告标题
+     * @param suggestions 具体的恋爱建议列表
+     */
+    public record LoveReport(String title, List<String> suggestions) {}
+
+    /**
      * 初始化 ChatClient 并挂载记忆 Advisor
      */
     public LoveApp(ChatModel dashscopeChatModel) {
@@ -43,15 +55,16 @@ public class LoveApp {
                 .defaultSystem(SYSTEM_PROMPT)
                 // 核心: 挂载记忆拦截器
                 .defaultAdvisors(
-                    new MessageChatMemoryAdvisor(chatMemory), // 记忆
-                    new ReReadingAdvisor(), // <--- 1. 先执行重读 (篡改请求)
-                    new MyLoggerAdvisor()   // <--- 2. 再执行日志 (记录篡改后的结果)
+                        new MessageChatMemoryAdvisor(chatMemory), // 记忆
+                        // 坑 1 (执行顺序): ReReadingAdvisor 必须先于 MyLoggerAdvisor 执行 (order -100 vs 0)
+                        new ReReadingAdvisor(), // <--- 1. 先执行重读 (篡改请求)
+                        new MyLoggerAdvisor()   // <--- 2. 再执行日志 (记录篡改后的结果)
                 )
                 .build();
     }
 
     /**
-     * 执行多轮对话
+     * 执行多轮对话 (返回纯文本)
      *
      * @param message 用户输入
      * @param chatId  会话ID (用于隔离不同用户的记忆)
@@ -74,5 +87,50 @@ public class LoveApp {
         }
         log.info("ChatId: {}, User: {}, AI: {}", chatId, message, content);
         return content;
+    }
+
+    /**
+     * [新增] 结构化输出专用方法
+     * 目标: 返回一个强类型的 LoveReport 对象，而不是 String
+     *
+     * @param message 用户输入
+     * @param chatId 会话ID
+     * @return 结构化的恋爱报告对象
+     */
+    public LoveReport doChatWithReport(String message, String chatId) {
+        // A. 准备转换器 (指定目标类型为 LoveReport)
+        BeanOutputConverter<LoveReport> converter = new BeanOutputConverter<>(LoveReport.class);
+
+        // B. 获取格式指令 (Format Instructions)
+        // 这是一段包含了 JSON Schema 的 Prompt，告诉 AI 必须按什么格式返回
+        String formatInstructions = converter.getFormat();
+
+        // C. 构造新的 System Prompt
+        // 我们把"格式指令"追加到系统 Prompt 后面，确保 AI 能看见
+        // 增加"不要包含 Markdown 代码块"的提示，防止 AI 输出 ```json
+        String structuredSystemPrompt = SYSTEM_PROMPT + "\n\n" +
+                "请务必按照以下格式输出纯 JSON 数据，不要包含任何 Markdown 代码块(```json)或其他解释：\n" + formatInstructions;
+
+        // D. 发起调用
+        String jsonResponse = chatClient.prompt()
+                .system(structuredSystemPrompt) // 使用包含格式指令的新 System Prompt
+                .user(message)
+                .advisors(spec -> spec
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 3))
+                .call()
+                .content(); // 先拿到原始的 JSON 字符串
+
+        // E. 自动反序列化
+        try {
+            // BeanOutputConverter 会自动处理 JSON 解析
+            LoveReport report = converter.convert(jsonResponse);
+            log.info("结构化输出成功: {}", report);
+            return report;
+        } catch (Exception e) {
+            log.error("结构化转换失败，原始响应: {}", jsonResponse, e);
+            // 兜底策略: 如果转换失败，返回一个包含原始文本的"空"报告，防止程序崩溃
+            return new LoveReport("解析失败", List.of("原始回复: " + jsonResponse));
+        }
     }
 }
