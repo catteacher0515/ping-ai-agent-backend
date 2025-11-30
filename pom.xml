@@ -66,6 +66,18 @@
             <version>5.8.41</version>
         </dependency>
 
+        <!-- 核心补丁: 强制引入 spring-ai-core 以获取 Advisor 支持 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-core</artifactId>
+            <version>1.0.0-M6</version>
+        </dependency>
+        <!-- 响应式支持: Flux 流式处理需要这个 -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
