@@ -2,6 +2,7 @@ package com.pingyu.pingaiagent.app;
 
 import com.pingyu.pingaiagent.advisor.MyLoggerAdvisor;
 import com.pingyu.pingaiagent.advisor.ReReadingAdvisor;
+import com.pingyu.pingaiagent.chatmemory.FileBasedChatMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -48,17 +49,17 @@ public class LoveApp {
      * 初始化 ChatClient 并挂载记忆 Advisor
      */
     public LoveApp(ChatModel dashscopeChatModel) {
-        // SOP 2 决策: 暂时使用内存版记忆
-        ChatMemory chatMemory = new InMemoryChatMemory();
+        // SOP 3 执行: 切换为文件持久化记忆 (FileBasedChatMemory)
+        ChatMemory chatMemory = new FileBasedChatMemory();
 
         this.chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
-                // 核心: 挂载记忆拦截器
+                // 核心:挂载记忆拦截器
                 .defaultAdvisors(
                         new MessageChatMemoryAdvisor(chatMemory), // 记忆
-                        // 坑 1 (执行顺序): ReReadingAdvisor 必须先于 MyLoggerAdvisor 执行 (order -100 vs 0)
-                        new ReReadingAdvisor(), // <--- 1. 先执行重读 (篡改请求)
-                        new MyLoggerAdvisor()   // <--- 2. 再执行日志 (记录篡改后的结果)
+                        // 坑1(执行顺序): ReReadingAdvisor 必须先于 MyLoggerAdvisor 执行 (order -100 vs 0)
+                        new ReReadingAdvisor(),   // <--- 1. 先执行重读 (篡改请求)
+                        new MyLoggerAdvisor()     // <--- 2. 再执行日志 (记录篡改后的结果)
                 )
                 .build();
     }
