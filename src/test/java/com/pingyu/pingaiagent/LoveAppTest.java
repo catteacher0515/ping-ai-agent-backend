@@ -80,4 +80,18 @@ class LoveAppTest {
         // 如果文档里有推荐课程链接，可以断言 answer.contains("codefather.cn")
     }
 
+    @Test
+    void testChatWithCloudRag() {
+        // 前置条件：请确保你已经在阿里云百炼控制台创建了名为 "恋爱大师" 的知识库并导入了数据
+        String chatId = "test-cloud-rag-001";
+        String message = "既然是恋爱大师，请告诉我如何处理异地恋的信任危机？";
+
+        System.out.println(">>> User (Cloud): " + message);
+
+        // 调用云端 RAG 接口
+        String answer = loveApp.doChatWithCloudRag(message, chatId);
+
+        System.out.println(">>> AI (Cloud RAG): " + answer);
+        Assertions.assertNotNull(answer);
+    }
 }

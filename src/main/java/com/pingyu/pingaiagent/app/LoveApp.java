@@ -43,6 +43,45 @@ public class LoveApp {
     @Resource
     private org.springframework.ai.vectorstore.VectorStore loveAppVectorStore;
 
+
+    /**
+     * 注入云端 RAG 顾问
+     * 注意：使用 @Resource 配合名称注入，避免与其他的 Advisor 冲突
+     */
+    @jakarta.annotation.Resource
+    private org.springframework.ai.chat.client.advisor.api.Advisor loveAppRagCloudAdvisor;
+
+    /**
+     * 案件 #009: 云端知识库问答
+     * <p>
+     * 使用阿里云百炼提供的 DocumentRetriever 进行检索增强。
+     *
+     * @param message 用户问题
+     * @param chatId  会话ID
+     * @return 增强后的回答
+     */
+    public String doChatWithCloudRag(String message, String chatId) {
+        ChatResponse chatResponse = chatClient.prompt()
+                .user(message)
+                .advisors(spec -> spec
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .advisors(
+                        // 1. 挂载云端 RAG 顾问 (核心升级)
+                        loveAppRagCloudAdvisor,
+                        // 2. 保持日志观察
+                        new MyLoggerAdvisor()
+                )
+                .call()
+                .chatResponse();
+
+        String content = "AI 云端链路暂时繁忙...";
+        if (chatResponse != null && chatResponse.getResult() != null) {
+            content = chatResponse.getResult().getOutput().getText();
+        }
+        return content;
+    }
+
     /**
      * 案件 #008: RAG 知识库问答
      * <p>
