@@ -3,6 +3,7 @@ package com.pingyu.pingaiagent.app;
 import com.pingyu.pingaiagent.advisor.MyLoggerAdvisor;
 import com.pingyu.pingaiagent.advisor.ReReadingAdvisor;
 import com.pingyu.pingaiagent.chatmemory.FileBasedChatMemory;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -36,6 +37,43 @@ public class LoveApp {
             "围绕单身、恋爱、已婚三种状态提问:单身状态询问社交圈拓展及追求心仪对象的困扰;" +
             "恋爱状态询问沟通、习惯差异引发的矛盾;已婚状态询问家庭责任与亲属关系处理的问题。" +
             "引导用户详述事情经过、对方反应及自身想法,以便给出专属解决方案。";
+
+    // ... 原有代码 ...
+
+    @Resource
+    private org.springframework.ai.vectorstore.VectorStore loveAppVectorStore;
+
+    /**
+     * 案件 #008: RAG 知识库问答
+     * <p>
+     * 核心逻辑：挂载 QuestionAnswerAdvisor，实现 "检索-增强-生成"。
+     *
+     * @param message 用户问题
+     * @param chatId  会话ID
+     * @return 增强后的回答
+     */
+    public String doChatWithRag(String message, String chatId) {
+        ChatResponse response = chatClient.prompt()
+                .user(message)
+                .advisors(spec -> spec
+                        // 1. 保持原有的记忆功能 (可选，视需求而定)
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .advisors(
+                        // 2. (核心) 挂载 RAG 顾问：自动查库、改写 Prompt
+                        new org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor(loveAppVectorStore),
+                        // 3. 保持日志观察
+                        new MyLoggerAdvisor()
+                )
+                .call()
+                .chatResponse();
+
+        String content = "AI 暂时掉线了...";
+        if (response != null && response.getResult() != null) {
+            content = response.getResult().getOutput().getText();
+        }
+        return content;
+    }
 
     /**
      * [新增] 定义结构化数据载体 (Java 14 Record 特性)

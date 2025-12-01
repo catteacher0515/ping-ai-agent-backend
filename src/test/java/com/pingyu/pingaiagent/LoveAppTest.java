@@ -65,4 +65,19 @@ class LoveAppTest {
         Assertions.assertTrue(report.suggestions().size() > 0);
     }
 
+    @Test
+    void testChatWithRag() {
+        // 准备：请确保 resources/document 下有关于 "单身" 或 "已婚" 的 md 文档
+        String chatId = "test-rag-001";
+        // 提问一个必须依赖知识库才能回答的具体问题
+        String message = "我今年30岁还是单身，家里催得急，但我有点社恐，该怎么办？";
+
+        System.out.println(">>> User: " + message);
+        String answer = loveApp.doChatWithRag(message, chatId);
+
+        System.out.println(">>> AI (RAG): " + answer);
+        Assertions.assertNotNull(answer);
+        // 如果文档里有推荐课程链接，可以断言 answer.contains("codefather.cn")
+    }
+
 }
