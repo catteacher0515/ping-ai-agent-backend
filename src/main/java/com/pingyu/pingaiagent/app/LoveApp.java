@@ -8,10 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,9 +22,10 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 /**
  * 案件 AI-005: LoveApp 多轮对话智能体
  * 核心策略:
- * 1. 使用 InMemoryChatMemory (SOP 2 决策: 快速验证)
+ * 1. 使用 InMemoryChatMemory (SOP 2 决策: 快速验证) -> 已升级为 FileBased
  * 2. 记忆窗口限制为 3 (SOP 2 决策: 平衡效率)
  * 3. 集成结构化输出 (SOP 3: 案件 AI-008)
+ * 4. 集成文件操作工具 (Tool-002: 文件操作)
  */
 @Component
 @Slf4j
@@ -38,11 +39,8 @@ public class LoveApp {
             "恋爱状态询问沟通、习惯差异引发的矛盾;已婚状态询问家庭责任与亲属关系处理的问题。" +
             "引导用户详述事情经过、对方反应及自身想法,以便给出专属解决方案。";
 
-    // ... 原有代码 ...
-
     @Resource
     private org.springframework.ai.vectorstore.VectorStore loveAppVectorStore;
-
 
     /**
      * 注入云端 RAG 顾问
@@ -50,6 +48,34 @@ public class LoveApp {
      */
     @jakarta.annotation.Resource
     private org.springframework.ai.chat.client.advisor.api.Advisor loveAppRagCloudAdvisor;
+
+    /**
+     * 初始化 ChatClient 并挂载记忆 Advisor & 工具
+     *
+     * 修正点：
+     * 1. 构造器增加了 ToolCallback[] fileOperationTools 参数
+     * 2. builder 中增加了 .defaultTools(fileOperationTools)
+     */
+    public LoveApp(ChatModel dashscopeChatModel, ToolCallback[] fileOperationTools) {
+        // SOP 3 执行: 切换为文件持久化记忆 (FileBasedChatMemory)
+        ChatMemory chatMemory = new FileBasedChatMemory();
+
+        this.chatClient = ChatClient.builder(dashscopeChatModel)
+                .defaultSystem(SYSTEM_PROMPT)
+                // --- 核心升级: 挂载文件操作工具 ---
+                // Spring 会自动将 ToolConfig 中注册的 fileOperationTools 注入到这里
+                .defaultTools(fileOperationTools)
+                // -----------------------------
+
+                // 核心:挂载记忆拦截器
+                .defaultAdvisors(
+                        new MessageChatMemoryAdvisor(chatMemory), // 记忆
+                        // 坑1(执行顺序): ReReadingAdvisor 必须先于 MyLoggerAdvisor 执行 (order -100 vs 0)
+                        new ReReadingAdvisor(),   // <--- 1. 先执行重读 (篡改请求)
+                        new MyLoggerAdvisor()     // <--- 2. 再执行日志 (记录篡改后的结果)
+                )
+                .build();
+    }
 
     /**
      * 案件 #009: 云端知识库问答
@@ -121,25 +147,6 @@ public class LoveApp {
      * @param suggestions 具体的恋爱建议列表
      */
     public record LoveReport(String title, List<String> suggestions) {}
-
-    /**
-     * 初始化 ChatClient 并挂载记忆 Advisor
-     */
-    public LoveApp(ChatModel dashscopeChatModel) {
-        // SOP 3 执行: 切换为文件持久化记忆 (FileBasedChatMemory)
-        ChatMemory chatMemory = new FileBasedChatMemory();
-
-        this.chatClient = ChatClient.builder(dashscopeChatModel)
-                .defaultSystem(SYSTEM_PROMPT)
-                // 核心:挂载记忆拦截器
-                .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(chatMemory), // 记忆
-                        // 坑1(执行顺序): ReReadingAdvisor 必须先于 MyLoggerAdvisor 执行 (order -100 vs 0)
-                        new ReReadingAdvisor(),   // <--- 1. 先执行重读 (篡改请求)
-                        new MyLoggerAdvisor()     // <--- 2. 再执行日志 (记录篡改后的结果)
-                )
-                .build();
-    }
 
     /**
      * 执行多轮对话 (返回纯文本)

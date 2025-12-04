@@ -1,11 +1,24 @@
 spring:
   application:
     name: ping-ai-agent
+    
+  datasource:
+    # 格式：jdbc:postgresql://[外网地址]:[端口]/[数据库名]
+    url: jdbc:postgresql://pgm-bp1102ca3fsas6a84o.rwlb.rds.aliyuncs.com:5432/ping_agent
+    username: ping_user
+    password: 1122336qwQW
+    driver-class-name: org.postgresql.Driver
 
-  # ==========================================
+  # ========================================
   #  Spring AI Alibaba 标准配置 (保留这一个就好)
   # ==========================================
   ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+#        dimensions: 1536
+        distance-type: COSINE_DISTANCE
+        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
       chat:
