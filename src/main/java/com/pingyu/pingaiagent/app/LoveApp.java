@@ -50,29 +50,30 @@ public class LoveApp {
     private org.springframework.ai.chat.client.advisor.api.Advisor loveAppRagCloudAdvisor;
 
     /**
-     * 初始化 ChatClient 并挂载记忆 Advisor & 工具
-     *
-     * 修正点：
-     * 1. 构造器增加了 ToolCallback[] fileOperationTools 参数
-     * 2. builder 中增加了 .defaultTools(fileOperationTools)
+     * 初始化 ChatClient 并挂载所有工具
+     * <p>
+     * 修正: 参数名由 fileOperationTools 改为 allTools,
+     * 以匹配 ToolConfig 中的 Bean 名称,并真实反映它包含所有工具的事实。
      */
-    public LoveApp(ChatModel dashscopeChatModel, ToolCallback[] fileOperationTools) {
-        // SOP 3 执行: 切换为文件持久化记忆 (FileBasedChatMemory)
+    /**
+     * 初始化 ChatClient
+     * [修改点]: 参数名改为 allTools，类型保持 ToolCallback[]
+     */
+    public LoveApp(ChatModel dashscopeChatModel, ToolCallback[] allTools) {
+        // <--- 1. 这里参数名改了，Spring 会自动去 ToolConfig 找名为 allTools 的 Bean
+
         ChatMemory chatMemory = new FileBasedChatMemory();
 
         this.chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
-                // --- 核心升级: 挂载文件操作工具 ---
-                // Spring 会自动将 ToolConfig 中注册的 fileOperationTools 注入到这里
-                .defaultTools(fileOperationTools)
-                // -----------------------------
 
-                // 核心:挂载记忆拦截器
+                // 核心升级: 挂载全量工具(包含文件操作 + 联网搜索)
+                .defaultTools(allTools)
+
                 .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(chatMemory), // 记忆
-                        // 坑1(执行顺序): ReReadingAdvisor 必须先于 MyLoggerAdvisor 执行 (order -100 vs 0)
-                        new ReReadingAdvisor(),   // <--- 1. 先执行重读 (篡改请求)
-                        new MyLoggerAdvisor()     // <--- 2. 再执行日志 (记录篡改后的结果)
+                        new MessageChatMemoryAdvisor(chatMemory),
+                        new ReReadingAdvisor(),
+                        new MyLoggerAdvisor()
                 )
                 .build();
     }

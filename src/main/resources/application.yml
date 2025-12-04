@@ -1,7 +1,42 @@
+# ========================================================================
+# 案件: 全局配置 (Nuclear Option)
+# 策略: 覆盖所有可能的配置路径，确保 Key 绝对能被读取
+# ========================================================================
+
 spring:
   application:
     name: ping-ai-agent
+
+  # ------------------------------------------------------------------------
+  # 路径 1: 标准 Spring AI Alibaba 配置
+  # ------------------------------------------------------------------------
+  ai:
+    dashscope:
+      # [核心修复] 直接硬编码你的 sk- Key
+      api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          # 指定模型，防止默认模型不可用
+          model: qwen-plus
     
+    # 向量数据库配置 (保持不变)
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        max-document-batch-size: 10000
+
+  # ------------------------------------------------------------------------
+  # 路径 2: 防御性配置 (防止某些版本读取 spring.cloud.ai)
+  # ------------------------------------------------------------------------
+  cloud:
+    ai:
+      dashscope:
+        api-key: ${DASHSCOPE_API_KEY}
+
+  # ------------------------------------------------------------------------
+  # 数据库配置
+  # ------------------------------------------------------------------------
   datasource:
     # 格式：jdbc:postgresql://[外网地址]:[端口]/[数据库名]
     url: jdbc:postgresql://pgm-bp1102ca3fsas6a84o.rwlb.rds.aliyuncs.com:5432/ping_agent
@@ -9,33 +44,31 @@ spring:
     password: 1122336qwQW
     driver-class-name: org.postgresql.Driver
 
-  # ========================================
-  #  Spring AI Alibaba 标准配置 (保留这一个就好)
-  # ==========================================
-  ai:
-    vectorstore:
-      pgvector:
-        index-type: HNSW
-#        dimensions: 1536
-        distance-type: COSINE_DISTANCE
-        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
-    dashscope:
-      api-key: ${DASHSCOPE_API_KEY}
-      chat:
-        options:
-          model: qwen-plus
-#    ollama:
-#      base-url: http://localhost:11434
-#      chat:
-#        model: llama3
+# ========================================================================
+# 案件 Tool-003: 联网搜索配置 (独立根节点)
+# ========================================================================
+search-api:
+  # SearchAPI Key (用于 WebSearchTool)
+  api-key: ${SEARCH_API_KEY}
 
+# ========================================================================
+# 路径 3: 遗留兼容性配置 (用于你的 AiService.java 等旧代码)
+# ========================================================================
+aliyun:
+  dashscope:
+    api-key: sk-1f3bc420038b41e9a40c235991003971
+
+# ========================================================================
+# Web 服务配置
+# ========================================================================
 server:
   port: 8080
   servlet:
     context-path: /api
 
-
-# springdoc-openapi
+# ========================================================================
+# 文档工具配置 (Swagger/Knife4j)
+# ========================================================================
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -48,14 +81,7 @@ springdoc:
       paths-to-match: '/**'
       packages-to-scan: com.pingyu.pingaiagent.controller
 
-# knife
 knife4j:
   enable: true
   setting:
     language: zh_cn
-
-aliyun:
-  dashscope:
-    # 这里使用 ${} 语法直接读取系统环境变量
-    # 只要系统里有 DASHSCOPE_API_KEY，Spring 启动时就会自动填进去
-    api-key: ${DASHSCOPE_API_KEY}
