@@ -26,7 +26,7 @@ import java.io.FileOutputStream;
  */
 @Slf4j
 @Component
-public class PdfTool {
+public class PdfTool implements AgentTool{
 
     // SOP 1 决策: 指定字体文件名 (必须与 resources/fonts/ 下的文件名一致)
     private static final String FONT_NAME = "simhei.ttf";

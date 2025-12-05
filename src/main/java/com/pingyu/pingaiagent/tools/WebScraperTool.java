@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class WebScraperTool {
+public class WebScraperTool implements AgentTool{
 
     // SOP 1 决策: 硬性截断阈值，防止 Token 爆炸
     private static final int MAX_CHARS = 4000;

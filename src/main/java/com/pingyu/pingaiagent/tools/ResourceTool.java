@@ -26,7 +26,7 @@ import java.io.OutputStream;
  */
 @Slf4j
 @Component
-public class ResourceTool {
+public class ResourceTool implements AgentTool{
 
     // SOP 1 决策: 硬性大小限制 50MB
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;

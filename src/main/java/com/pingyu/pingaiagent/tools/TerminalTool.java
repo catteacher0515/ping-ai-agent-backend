@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-public class TerminalTool {
+public class TerminalTool implements AgentTool{
 
     // SOP 1 决策: 严格白名单，严禁 rm, format, shutdown
     private static final List<String> ALLOWED_COMMANDS = List.of(

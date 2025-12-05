@@ -21,7 +21,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class WebSearchTool {
+public class WebSearchTool implements AgentTool{
 
     private final String apiKey;
 

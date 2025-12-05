@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
  * 安全约束：所有操作限制在 FileConstant.FILE_SAVE_DIR 目录下
  */
 @Slf4j
-public class FileOperationTool {
+public class FileOperationTool implements AgentTool{
 
     /**
      * 将内容写入文件

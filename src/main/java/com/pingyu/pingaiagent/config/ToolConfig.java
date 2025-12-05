@@ -1,38 +1,40 @@
 package com.pingyu.pingaiagent.config;
 
-import com.pingyu.pingaiagent.tools.*;
+import com.pingyu.pingaiagent.tools.AgentTool;
+import com.pingyu.pingaiagent.tools.FileOperationTool;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
+@Slf4j
 public class ToolConfig {
 
-    // 1. 注册文件工具 (保持不变)
+    // 1. 保留 FileOperationTool 的 Bean 定义 (因为它没有加 @Component，或者为了明确单例)
+    // 如果其他工具类都加了 @Component，这里其实只需要这一个手动 Bean
     @Bean
     public FileOperationTool fileOperationTool() {
         return new FileOperationTool();
     }
 
-    // 2. [新增] 注册搜索工具 (Spring 会自动注入 application.yml 里的 api-key)
-    // 注意：WebSearchTool 类上必须有 @Component 注解
-    // 如果你没有在 WebSearchTool 加 @Component，这里就需要手动 new WebSearchTool(apiKey)
-    // 建议去检查一下 WebSearchTool.java，确保类名上面有一行 @Component
-
     /**
-     * ✅ 唯一合法的全家桶 Bean
-     * 包含所有工具：File + Search + Scraper + Terminal + Resource + PDF
+     * ✅ 集中注册: 自动收集所有 AgentTool
+     * <p>
+     * 原理: Spring 会自动将所有实现了 AgentTool 接口的 Bean 注入到 toolList 中。
+     * 优势: 以后新增工具，只需让工具类 implements AgentTool，无需修改此处代码。
      */
     @Bean
-    public ToolCallback[] allTools(FileOperationTool fileTool,
-                                   WebSearchTool searchTool,
-                                   WebScraperTool scraperTool,
-                                   TerminalTool terminalTool,
-                                   ResourceTool resourceTool,
-                                   PdfTool pdfTool) { // <--- 注入新工具
+    public ToolCallback[] allTools(List<AgentTool> toolList) {
+        log.info("正在注册 AI 工具，共扫描到 {} 个工具...", toolList.size());
 
-        // 将六个工具打包在一起
-        return ToolCallbacks.from(fileTool, searchTool, scraperTool, terminalTool, resourceTool, pdfTool);
+        // 打印一下都注册了谁，方便调试
+        toolList.forEach(tool -> log.info("  - 加载工具: {}", tool.getClass().getSimpleName()));
+
+        // List 转 Array，注册给 Spring AI
+        return ToolCallbacks.from(toolList.toArray());
     }
 }
