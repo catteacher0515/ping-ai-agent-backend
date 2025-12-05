@@ -44,6 +44,24 @@ spring:
     password: 1122336qwQW
     driver-class-name: org.postgresql.Driver
 
+# 邮件配置
+#email:
+#  host: smtp.gmail.com
+#  port: 587
+#  username: maomilaoshi0515@gmail.com
+#  # 关键: 密码必须从环境变量读取
+#  password: ${EMAIL_PASSWORD}
+#  ssl: false
+#  starttls: true
+
+# 案件 Tool-009: 邮件配置 (QQ 专用版)
+email:
+  host: smtp.qq.com
+  port: 465
+  username: 2726784816@qq.com  # ✅ 确认是这个
+  password: ${EMAIL_PASSWORD}
+  ssl: true
+
 # ========================================================================
 # 案件 Tool-003: 联网搜索配置 (独立根节点)
 # ========================================================================
