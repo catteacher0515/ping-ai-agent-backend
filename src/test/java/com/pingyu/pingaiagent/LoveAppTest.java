@@ -24,7 +24,7 @@ class LoveAppTest {
         String chatId = UUID.randomUUID().toString();
 
         // --- 第一轮: 建立连接 ---
-        String message1 = "你好";
+        String message1 = "你好，现在几点了";
         String answer1 = loveApp.doChat(message1, chatId);
         System.out.println(">>> Round 1 AI: " + answer1);
         Assertions.assertNotNull(answer1);
