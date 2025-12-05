@@ -1,9 +1,6 @@
 package com.pingyu.pingaiagent.config;
 
-import com.pingyu.pingaiagent.tools.FileOperationTool;
-import com.pingyu.pingaiagent.tools.TerminalTool;
-import com.pingyu.pingaiagent.tools.WebScraperTool;
-import com.pingyu.pingaiagent.tools.WebSearchTool;
+import com.pingyu.pingaiagent.tools.*;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.context.annotation.Bean;
@@ -25,15 +22,16 @@ public class ToolConfig {
 
     /**
      * ✅ 唯一合法的全家桶 Bean
-     * 包含所有工具：File + Search + Scraper + Terminal
+     * 包含所有工具：File + Search + Scraper + Terminal + Resource
      */
     @Bean
     public ToolCallback[] allTools(FileOperationTool fileTool,
                                    WebSearchTool searchTool,
                                    WebScraperTool scraperTool,
-                                   TerminalTool terminalTool) { // <--- 注入新工具
+                                   TerminalTool terminalTool,
+                                   ResourceTool resourceTool) { // <--- 注入新工具
 
-        // 将四个工具打包在一起
-        return ToolCallbacks.from(fileTool, searchTool, scraperTool, terminalTool);
+        // 将五个工具打包在一起
+        return ToolCallbacks.from(fileTool, searchTool, scraperTool, terminalTool, resourceTool);
     }
 }
