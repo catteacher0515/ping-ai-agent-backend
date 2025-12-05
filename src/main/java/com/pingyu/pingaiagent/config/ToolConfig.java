@@ -1,6 +1,7 @@
 package com.pingyu.pingaiagent.config;
 
 import com.pingyu.pingaiagent.tools.FileOperationTool;
+import com.pingyu.pingaiagent.tools.TerminalTool;
 import com.pingyu.pingaiagent.tools.WebScraperTool;
 import com.pingyu.pingaiagent.tools.WebSearchTool;
 import org.springframework.ai.tool.ToolCallback;
@@ -23,15 +24,16 @@ public class ToolConfig {
     // 建议去检查一下 WebSearchTool.java，确保类名上面有一行 @Component
 
     /**
-     * 2. [关键修改] 打包所有工具
-     * 更新 allTools 方法签名，注入 WebScraperTool
+     * ✅ 唯一合法的全家桶 Bean
+     * 包含所有工具：File + Search + Scraper + Terminal
      */
     @Bean
     public ToolCallback[] allTools(FileOperationTool fileTool,
                                    WebSearchTool searchTool,
-                                   WebScraperTool scraperTool) { // <--- 注入新工具
+                                   WebScraperTool scraperTool,
+                                   TerminalTool terminalTool) { // <--- 注入新工具
 
-        // 将三个工具打包在一起
-        return ToolCallbacks.from(fileTool, searchTool, scraperTool);
+        // 将四个工具打包在一起
+        return ToolCallbacks.from(fileTool, searchTool, scraperTool, terminalTool);
     }
 }
