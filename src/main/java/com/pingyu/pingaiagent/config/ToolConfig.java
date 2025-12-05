@@ -22,16 +22,17 @@ public class ToolConfig {
 
     /**
      * ✅ 唯一合法的全家桶 Bean
-     * 包含所有工具：File + Search + Scraper + Terminal + Resource
+     * 包含所有工具：File + Search + Scraper + Terminal + Resource + PDF
      */
     @Bean
     public ToolCallback[] allTools(FileOperationTool fileTool,
                                    WebSearchTool searchTool,
                                    WebScraperTool scraperTool,
                                    TerminalTool terminalTool,
-                                   ResourceTool resourceTool) { // <--- 注入新工具
+                                   ResourceTool resourceTool,
+                                   PdfTool pdfTool) { // <--- 注入新工具
 
-        // 将五个工具打包在一起
-        return ToolCallbacks.from(fileTool, searchTool, scraperTool, terminalTool, resourceTool);
+        // 将六个工具打包在一起
+        return ToolCallbacks.from(fileTool, searchTool, scraperTool, terminalTool, resourceTool, pdfTool);
     }
 }
