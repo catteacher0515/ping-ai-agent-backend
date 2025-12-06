@@ -8,16 +8,25 @@ spring:
     name: ping-ai-agent
 
   # ------------------------------------------------------------------------
-  # 路径 1: 标准 Spring AI Alibaba 配置
+  # 路径 1: 标准 Spring AI Alibaba 配置 (修正版)
   # ------------------------------------------------------------------------
   ai:
     dashscope:
-      # [核心修复] 直接硬编码你的 sk- Key
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
-          # 指定模型，防止默认模型不可用
           model: qwen-plus
+
+    # [核心修复] MCP 客户端配置
+    mcp:
+      client:
+        enabled: true      # <--- 1. 必须显式开启！
+        type: SYNC         # <--- 2. 必须指定是同步 (SYNC) 还是异步 (ASYNC)
+        name: ping-agent-client # (可选) 给客户端起个名
+        version: 1.0.0          # (可选) 版本号
+        stdio:
+          # 指定 MCP 配置文件路径
+          servers-configuration: classpath:mcp-servers.json
     
     # 向量数据库配置 (保持不变)
     vectorstore:

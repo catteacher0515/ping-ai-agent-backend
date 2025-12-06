@@ -12,6 +12,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -43,6 +44,13 @@ public class LoveApp {
     private org.springframework.ai.vectorstore.VectorStore loveAppVectorStore;
 
     /**
+     * 案件 MCP-L2-001: 注入 MCP 工具提供者
+     * Spring AI 会自动扫描 mcp-servers.json 并将解析出的工具放入此 Bean 中
+     */
+    @Resource
+    private ToolCallbackProvider toolCallbackProvider;
+
+    /**
      * 注入云端 RAG 顾问
      * 注意：使用 @Resource 配合名称注入，避免与其他的 Advisor 冲突
      */
@@ -72,7 +80,7 @@ public class LoveApp {
 
                 .defaultAdvisors(
                         new MessageChatMemoryAdvisor(chatMemory),
-                        new ReReadingAdvisor(),
+//                        new ReReadingAdvisor(),
                         new MyLoggerAdvisor()
                 )
                 .build();
@@ -218,5 +226,26 @@ public class LoveApp {
             // 兜底策略: 如果转换失败，返回一个包含原始文本的"空"报告，防止程序崩溃
             return new LoveReport("解析失败", List.of("原始回复: " + jsonResponse));
         }
+    }
+
+    /**
+     * 案件 MCP-L2-001: MCP 专用对话通道
+     * * @param message 用户问题 (e.g., "查查附近的咖啡馆")
+     * @param chatId 会话ID
+     * @return 包含 MCP 工具调用结果的 AI 回复
+     */
+    public String doChatWithMcp(String message, String chatId) {
+        String content = chatClient.prompt()
+                .user(message)
+                // 核心动作：挂载 MCP 工具集
+                .tools(toolCallbackProvider)
+                .advisors(spec -> spec
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .call()
+                .content();
+
+        log.info("MCP Chat Response: {}", content);
+        return content;
     }
 }

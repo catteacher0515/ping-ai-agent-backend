@@ -19,6 +19,22 @@ class LoveAppTest {
     private LoveApp loveApp;
 
     @Test
+    void testChatWithMcp() {
+        String chatId = "test-mcp-001";
+        // 这是一个只有连上高德 MCP 才能回答的问题
+        String message = "我在北京天安门，请帮我找一家最近的必胜客，告诉我地址和距离。";
+
+        System.out.println(">>> User: " + message);
+        String answer = loveApp.doChatWithMcp(message, chatId);
+        System.out.println(">>> AI (MCP): " + answer);
+
+        // 断言：如果成功，回答中应该包含具体的地址或距离数字
+        Assertions.assertNotNull(answer);
+        // 简单验证是否包含数字 (距离) 或 "必胜客"
+        Assertions.assertTrue(answer.contains("必胜客") || answer.contains("公里") || answer.contains("米"));
+    }
+
+    @Test
     void testChat() {
         // 生成随机 chatId，模拟一个全新用户
         String chatId = UUID.randomUUID().toString();
